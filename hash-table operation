@@ -1,0 +1,236 @@
+#define _CRT_SECURE_NO_WARNINGS
+
+#include <stdio.h>
+#include <stdlib.h>
+#include "linkedList_struct.h"
+#define MAX 10
+
+/* This function creates an index corresponding to the every given supplyId */
+int hashCode(int supplyId)
+{
+	return (supplyId % MAX);
+}
+
+/* For initializing the Hash Table */
+void initArray(node_t *Hp[])
+{
+	int i;
+	for (i = 0; i < MAX; i++)
+		Hp[i] = NULL;
+}
+
+int menu(void)
+{
+	int choice;
+
+	printf("\n\t\tMENU\n"
+		"*************************************"
+		"\n1. Insert a supply into the Hash Table"
+		"\n2. Remove a supply from the Hash Table"
+		"\n3. Display a Hash Table"
+		"\n4. Exit\n");
+
+	do {
+		printf("\nPlease enter your choice : ");
+		scanf("%d", &choice);
+	} while (choice < 1 || choice>4);
+
+	return choice;
+}
+
+/* This function finds the given supplyId in the Linked List
+Returns it's index, Returns NULL in case supplyId is not present */
+node_t *searchSupplyId(node_t *p, int supplyId)
+{
+	while (p != NULL) {
+		if (p->data.supplyId == supplyId)
+			return(p);
+		else p = p->next;
+	}
+	return p;
+}
+
+int insertSupply(node_t *hashHeadp[], LType supply)
+{
+	int index = hashCode(supply.supplyId);
+
+	if (hashHeadp[index] == NULL) /* Absence of Linked List at a given Index of Hash Table */
+	{
+		hashHeadp[index] = addBeginning(hashHeadp[index], supply);
+		return 1;
+	}else {	/* A Linked List is present at given index of Hash Table */
+		node_t *ptr = hashHeadp[index];
+
+		/* Returns the node (Linked List item) located at given find_index  */
+		node_t *addr = searchSupplyId(ptr, supply.supplyId);
+
+		if (addr != NULL) {
+			/* supplyId already present in linked list Updating the price of already existing supplyId*/
+			addr->data.price = supply.price;
+			return 0;
+		}
+		else {
+			/* supplyId not found in existing linked list Adding the supplyId at the end of the linked list */
+			while (ptr->next != NULL)
+				ptr = ptr->next;
+			addAfter(ptr, supply);
+			return 1;
+		}
+	}
+}
+
+/* To remove an element from Hash Table */
+int removeSupply(node_t *Hp[], int supplyId)
+{
+	int index = hashCode(supplyId);
+	supply_t item;
+	if (Hp[index] == NULL)
+		return 0;
+	else
+	{
+		if (Hp[index]->data.supplyId == supplyId)
+		{
+			Hp[index] = deleteFirst(Hp[index], &item);
+			return 1;
+		}
+		else
+		{
+			node_t *ptr = Hp[index];
+			while (ptr->next != NULL && ptr->next->data.supplyId != supplyId)
+				ptr = ptr->next;
+			
+			if (ptr != NULL)
+			{
+				deleteAfter(ptr, &item);
+				return 1;
+			}
+			else
+				return 0;
+		}
+	}
+}
+
+/* To display the contents of Hash Table */
+void display(node_t *Hp[])
+{
+	int i;
+	for (i = 0; i < MAX; i++)
+	{
+		node_t *temp = Hp[i];
+		if (temp == NULL)
+			printf("Head [%d] has no elements\n", i);
+		else
+		{
+			printf("Head [%d] has elements : ", i);
+			while (temp != NULL)
+			{
+				printf("Supply Id : %d  Price : %.2f \t", temp->data.supplyId, temp->data.price);
+				temp = temp->next;
+			}
+			printf("\n");
+		}
+	}
+}
+
+int main(void)
+{
+	int i, choice, supplyId, flag;
+	double price;
+	LType supply;
+	node_t *hashHeadp[MAX];
+	initArray(hashHeadp);
+
+	do {
+		choice = menu();
+
+		switch (choice)
+		{
+		case 1:
+			printf("\nEnter supplyId and price : ");
+			scanf("%d %lf", &supply.supplyId, &supply.price);
+
+			flag = insertSupply(hashHeadp, supply);
+			
+			if(!flag)
+				printf("\nThe supplyId has been already inserted, price will be updated!\n");
+
+			printf("\nInserted Supply : %d ( supplyId ) and %.2f ( price ) \n", supply.supplyId, supply.price);
+			break;
+
+		case 2:
+			printf("\nEnter the supplyId to delete : ");
+			scanf("%d", &supplyId);
+			
+			flag = removeSupply(hashHeadp, supplyId);
+
+			if(flag)
+				printf("\nSupply which has an Id %d is removed.\n", supplyId);
+			else
+				printf("This supplyId does not exists\n");
+			break;
+
+		case 3:
+			display(hashHeadp);
+		}
+
+	} while (choice != 4);
+
+	return(0);
+}
+
+/* Node for storing an item in a Linked List */
+/* You have to add linklist as an additional file. */
+
+typedef struct {
+	int supplyId;
+	double price;
+}supply_t;
+
+typedef supply_t LType;
+
+typedef struct node_s{	
+	LType data;
+	struct node_s *next; 
+} node_t;
+
+node_t *getNode(void){
+	node_t *node;
+	node = (node_t *)malloc(sizeof(node_t));
+	node->next = NULL;
+	return (node);
+}
+
+void addAfter(node_t *p, LType item){
+	node_t *newp;
+	newp = getNode();
+	newp->data = item;
+	newp->next = p->next;
+	p->next = newp;
+}
+
+node_t *addBeginning(node_t *headp, LType item){
+	node_t *newp;
+	newp = getNode();
+	newp->data = item;
+	newp->next = headp;
+	return (newp);
+}
+
+node_t *deleteFirst(node_t *headp, LType *item)
+{
+	node_t *del;
+	del = headp;
+	*item = del->data;
+	headp = del->next;
+	free(del);
+	return (headp);
+}
+
+void deleteAfter(node_t *p, LType *item)
+{
+	node_t *del;
+	del = p->next;
+	*item = del->data;
+	p->next = del->next;
+	free(del);
+}
